@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>主页</title>
+  <link rel="stylesheet" href="./layui/css/layui.css">
+  <script src="./layui/layui.js"></script>
+  <style>
+    .layui-tab{
+      margin-bottom: 0;
+    }
+    .layui-tab-content{
+      padding-bottom: 0;
+    }
+    .layui-tab-title li:nth-child(1) i {
+      display: none;
+    }
+    iframe{
+      width: 100%;
+      /* 100vh 指的是浏览器窗口显示区域高度 === window.innerHeight */
+      height: calc(100vh - 130px);
+    }
+  </style>
+</head>
+<script>
+  // 判断是否已登录, 如果未登录, 就显示登录页
+  var name = sessionStorage.getItem("name")
+  console.log(name)
+  if (!name || name == "null") {
+    location.href = "login.html"
+  }
+</script>
+
+
+<body>
+  <div class="layui-layout layui-layout-admin">
+    <!-- 顶部导航 -->
+    <div class="layui-header">
+      <div class="layui-logo">商品后台管理系统</div>
+      <ul class="layui-nav layui-layout-right">
+        <li class="layui-nav-item layui-hide layui-show-md-inline-block">
+          <a href="javascript:;">
+            <img id="headImg" class="layui-nav-img">
+            <span id="nameSpan">用户名</span>
+            <script>
+              // 显示用户名
+              document.getElementById("nameSpan").innerText = name
+              // 默认显示用户头像
+              var headImg = document.getElementById('headImg')
+              headImg.src = `./HeadImg/${name}.jpg`
+              // 如果用户没有自定义头像, 就会报错, 会触发error事件, 就显示默认头像
+              headImg.onerror = function(){
+                console.log("图片显示出错, 找不到图片")
+                headImg.src = "./HeadImg/head_default.jpg"
+              }
+            </script>
+          </a>
+          <dl class="layui-nav-child">
+            <dd><a id="uploadBtn" href="javascript:;" class="navTab" data-url="HeadImg" data-title="上传头像">上传头像</a></dd>
+            <dd><a href="javascript:;" onclick="logout()">退出 </a></dd>
+          </dl>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 左侧垂直导航区域 -->
+    <div class="layui-side layui-bg-black">
+      <div class="layui-side-scroll">
+        <ul class="layui-nav layui-nav-tree">
+          <li class="layui-nav-item">
+            <a href="javascript:;" class="navTab" data-url="Statistics" data-title="数据统计">数据统计</a></li>
+          <li class="layui-nav-item layui-nav-itemed">
+            <a class="" href="javascript:;">商品管理</a>
+            <dl class="layui-nav-child">
+              <dd class="layui-this"><a href="javascript:;" class="navTab" data-title="所有商品">查询所有商品</a></dd>
+              <dd><a href="javascript:;" class="navTab" data-url="AddGoods" data-title="添加商品">添加商品</a></dd>
+              <dd><a href="javascript:;" class="navTab" data-url="GoodsClassify" data-title="商品分类"> 商品分类</a></dd>
+              <dd><a href="javascript:;" class="navTab" data-url="AddClassify" data-title="添加分类">添加分类</a></dd>
+            </dl>
+          </li>
+          <li class="layui-nav-item">
+            <a href="javascript:;">店铺管理</a>
+            <dl class="layui-nav-child">
+              <dd><a href="javascript:;" class="navTab" data-url="AllShops" data-title="所有店铺">查找所有店铺</a></dd>
+              <dd><a href="javascript:;" class="navTab" data-url="AddShop" data-title="添加店铺">添加店铺</a></dd>
+            </dl>
+          </li>
+          <li class="layui-nav-item">
+            <a href="javascript:;">管理员</a>
+            <dl class="layui-nav-child">
+              <dd id="admins"><a href="javascript:;" class="navTab" data-url="AllAdmin" data-title="管理员们">所有管理员</a></dd>
+              <script>
+                // 管理员权限限制
+                layui.use("jquery",function(){
+                  var $ = layui.jquery;
+                  $.get("/MyAdmin", {username: name}, function(data){
+                    // console.log(data)
+                    if(data.msg[0].power > 0){
+                      // 如果当前账号不是超级管理员, 就隐藏所有管理员信息这一页
+                      $("#admins").remove()
+                    }
+                  })
+                })
+              </script>
+              <dd><a href="javascript:;" class="navTab" data-url="MyAdmin" data-title="我的">管理员信息</a></dd>
+            </dl>
+          </li>
+          <li class="layui-nav-item"><a href="javascript:;" onclick="logout()">退出登录</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 内容主体区域 -->
+    <div class="layui-body">
+      <div class="layui-tab layui-tab-brief" lay-allowClose="true" lay-filter="binge">
+        <ul class="layui-tab-title">
+          <li class="layui-this" lay-id="所有商品">所有商品</li>
+        </ul>
+        <div class="layui-tab-content">
+          <div class="layui-tab-item layui-show">
+            <iframe src="./pages/AllGoods.html" frameborder="0"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+<script>
+  layui.use(["element", "jquery"], function () {
+    var element = layui.element;
+    var $ = layui.jquery;
+
+    // 给导航中的列表项(a标签绑定点击事件)
+    $(".navTab").click(function (e) {
+      console.log(e.target, this)
+      // 判断选项卡中有没有这一页,
+      var bool = $(".layui-tab-title li").toArray().some(function (tab) {
+        return tab.innerText == e.target.dataset.title
+      })
+      // 如果有这一页, 就切换选项卡
+      if (bool) {
+        // 选项卡切换
+        element.tabChange("binge", e.target.dataset.title)
+        // 刷新这一页
+        // location.reload()// 整个页面刷新,刷新主页,重置tab
+        // 找到当前显示页面的iframe,刷新iframe中的子页面
+        console.log($(".layui-show iframe")[0].contentWindow)
+        $(".layui-show iframe")[0].contentWindow.location.reload()
+      } else {
+        console.log("创建")
+        element.tabAdd("binge", {
+          title: e.target.dataset.title,
+          content: `<iframe src="./pages/${e.target.dataset.url}.html" frameborder="0"></iframe>`,
+          id: e.target.dataset.title
+        })
+        // 创建这一页之后,还要自动切过来
+        element.tabChange("binge", e.target.dataset.title)
+      }
+
+      // 如果当前点击的是上传头像页, 要取消左侧列表的选中
+      if(e.target.dataset.url == "HeadImg"){
+        $("dd").removeClass("layui-this")
+      }
+    })
+
+    // 切换tab选项卡, 更新左侧导航标题标记
+    element.on("tab(binge)", function(res){
+      // 如果点的是tab标题li标签, 就执行切换
+      if(res.elem.context.nodeName == "LI"){
+        var id = res.elem.context.getAttribute("lay-id")   // 找到点击这一项的id值
+        $(".layui-side .layui-this").removeClass("layui-this")   // 取消左侧导航所有标记
+        $(`[data-title=${id}]`).parent().addClass("layui-this")  // 添加这一项标记
+        $(".layui-show iframe")[0].contentWindow.location.reload()  // 刷新这一页的iframe
+      }
+    })
+  })
+
+
+
+
+  // 退出登录, 清除本地用户名,刷新页面
+  function logout(){
+    sessionStorage.removeItem("name")
+    location.reload()
+  }
+
+
+</script>
+
+</html>
